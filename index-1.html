@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>English Side Print</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<style>
+  :root{--bg:#f3f5f2;--card:#fff;--ink:#17231c;--mute:#5d6b62;--line:#d5dcd6;--acc:#1f5f45;--accink:#fff}
+  @media (prefers-color-scheme:dark){:root{--bg:#121a15;--card:#1a251e;--ink:#e8efe9;--mute:#9bab9f;--line:#2b3a30;--acc:#5fc79a;--accink:#0d1a12}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:16px}
+  main{max-width:560px;margin:0 auto}
+  h1{font-size:1.4rem;margin:8px 0 4px}
+  h2{font-size:1rem;margin:0 0 10px}
+  p.sub{margin:0 0 16px;color:var(--mute)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px}
+  .drop{display:block;border:2px dashed var(--line);border-radius:12px;padding:28px 12px;text-align:center;cursor:pointer}
+  .drop input{display:none}
+  .drop.on{border-color:var(--acc)}
+  .row{display:flex;gap:12px}
+  .row>label{flex:1;min-width:0}
+  label{display:block;font-size:.9rem;color:var(--mute);margin-bottom:10px}
+  input[type=number],input[type=text],select{width:100%;font:inherit;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+  label.chk{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:1rem}
+  button{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-radius:10px;background:var(--acc);color:var(--accink);cursor:pointer;margin-top:4px}
+  button.sec{background:transparent;color:var(--acc);border:2px solid var(--acc);margin-top:10px}
+  button:disabled{opacity:.5;cursor:default}
+  button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+  .presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .presets button{width:auto;flex:1;padding:10px;margin:0;font-weight:500}
+  #msg{margin:10px 0 0;color:var(--mute);min-height:1.5em}
+  #msg.err{color:#c0392b}
+  #out{display:none}
+  .hint{font-size:.85rem;color:var(--mute);margin:-4px 0 10px}
+</style>
+</head>
+<body>
+<main>
+  <h1>English side print</h1>
+  <p class="sub">Keep one language column of each page, then print several pages per sheet.</p>
+
+  <div class="card">
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept="application/pdf,.pdf">
+      <strong id="fname">Choose PDF</strong><br><span style="color:var(--mute)">or drop it here</span>
+    </label>
+  </div>
+
+  <div class="card">
+    <h2>Pages</h2>
+    <div class="row">
+      <label>From page<input type="number" id="from" min="1" value="1"></label>
+      <label>To page<input type="number" id="to" min="1" placeholder="last"></label>
+    </div>
+    <label>Skip pages (example: 1, 4, 10-12)<input type="text" id="skip" placeholder="none" inputmode="numeric"></label>
+  </div>
+
+  <div class="card">
+    <h2>Crop</h2>
+    <div class="presets">
+      <button type="button" class="sec" data-p="left">English (left)</button>
+      <button type="button" class="sec" data-p="right">Hindi (right)</button>
+      <button type="button" class="sec" data-p="full">Full page</button>
+    </div>
+    <div class="row">
+      <label>Keep side
+        <select id="side"><option value="left">Left</option><option value="right">Right</option></select>
+      </label>
+      <label>Width kept (%)<input type="number" id="pct" min="20" max="100" value="50"></label>
+    </div>
+    <div class="row">
+      <label>Trim top (%)<input type="number" id="ttop" min="0" max="40" value="0"></label>
+      <label>Trim bottom (%)<input type="number" id="tbot" min="0" max="40" value="0"></label>
+    </div>
+    <p class="hint">Trim top or bottom to remove headers, logos or page codes.</p>
+  </div>
+
+  <div class="card">
+    <h2>Sheet</h2>
+    <div class="row">
+      <label>Pages per sheet
+        <select id="per"><option value="2">2 side by side</option><option value="1">1</option><option value="4">4 (2 x 2)</option></select>
+      </label>
+      <label>Paper
+        <select id="paper"><option value="a4">A4</option><option value="letter">Letter</option><option value="orig">Same as PDF</option></select>
+      </label>
+    </div>
+    <div class="row">
+      <label>Sheet margin (mm)<input type="number" id="mar" min="0" max="30" value="0"></label>
+      <label>Order
+        <select id="order"><option value="n">1, 2 then 3, 4</option><option value="r">Reverse</option></select>
+      </label>
+    </div>
+    <label class="chk"><input type="checkbox" id="cut" checked> Thin line between pages</label>
+    <label class="chk"><input type="checkbox" id="num"> Print original page numbers</label>
+    <button id="go" disabled>Make print PDF</button>
+    <p id="msg"></p>
+  </div>
+
+  <div class="card" id="out">
+    <button id="print">Open to print</button>
+    <button class="sec" id="dl">Download PDF</button>
+    <button class="sec" id="share" style="display:none">Share / save to phone</button>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+let srcBytes = null, srcName = 'file', outUrl = null, outBlob = null, total = 0;
+const KEYS = ['side','pct','ttop','tbot','per','paper','mar','order','cut','num'];
+
+function msg(t, err){ $('msg').textContent = t; $('msg').className = err ? 'err' : ''; }
+
+/* remember settings */
+try{
+  const s = JSON.parse(localStorage.getItem('esp') || '{}');
+  KEYS.forEach(k => { if(k in s){ const el = $(k); el.type === 'checkbox' ? el.checked = s[k] : el.value = s[k]; } });
+}catch(e){}
+function saveSettings(){
+  try{
+    const s = {}; KEYS.forEach(k => { const el = $(k); s[k] = el.type === 'checkbox' ? el.checked : el.value; });
+    localStorage.setItem('esp', JSON.stringify(s));
+  }catch(e){}
+}
+
+/* crop presets */
+document.querySelectorAll('.presets button').forEach(b => b.addEventListener('click', () => {
+  const p = b.dataset.p;
+  if(p === 'full'){ $('side').value = 'left'; $('pct').value = 100; }
+  else { $('side').value = p; $('pct').value = 50; }
+}));
+
+async function loadFile(f){
+  if(!f) return;
+  try{
+    srcBytes = new Uint8Array(await f.arrayBuffer());
+    srcName = f.name.replace(/\.pdf$/i,'');
+    const d = await PDFLib.PDFDocument.load(srcBytes, {ignoreEncryption:true});
+    total = d.getPageCount();
+    $('fname').textContent = f.name + ' (' + total + ' pages)';
+    $('to').value = total; $('to').max = total; $('from').max = total;
+    $('go').disabled = false; $('out').style.display = 'none';
+    msg('');
+  }catch(e){ msg('Could not read this PDF. ' + e.message, true); $('go').disabled = true; }
+}
+$('file').addEventListener('change', e => loadFile(e.target.files[0]));
+const drop = $('drop');
+['dragover','dragenter'].forEach(ev => drop.addEventListener(ev, e => {e.preventDefault(); drop.classList.add('on');}));
+['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => {e.preventDefault(); drop.classList.remove('on');}));
+drop.addEventListener('drop', e => loadFile(e.dataTransfer.files[0]));
+
+function parseSkip(str){
+  const set = new Set();
+  (str || '').split(/[,\s]+/).filter(Boolean).forEach(part => {
+    const m = part.match(/^(\d+)(?:-(\d+))?$/);
+    if(!m) throw new Error('Skip pages: "' + part + '" is not valid. Use numbers like 1, 4, 10-12.');
+    const a = +m[1], b = m[2] ? +m[2] : a;
+    for(let i = Math.min(a,b); i <= Math.max(a,b); i++) set.add(i);
+  });
+  return set;
+}
+
+const clamp = (v, lo, hi, d) => { v = parseFloat(v); return isNaN(v) ? d : Math.min(hi, Math.max(lo, v)); };
+
+$('go').addEventListener('click', async () => {
+  const btn = $('go'); btn.disabled = true; msg('Working...'); saveSettings();
+  try{
+    const { PDFDocument, rgb, StandardFonts } = PDFLib;
+    const src = await PDFDocument.load(srcBytes, {ignoreEncryption:true});
+    const from = Math.max(1, +$('from').value || 1);
+    const to = Math.min(total, +$('to').value || total);
+    if(from > to) throw new Error('"From page" is after "To page".');
+    const skip = parseSkip($('skip').value);
+    const frac = clamp($('pct').value, 20, 100, 50) / 100;
+    const tTop = clamp($('ttop').value, 0, 40, 0) / 100;
+    const tBot = clamp($('tbot').value, 0, 40, 0) / 100;
+    const side = $('side').value;
+    const per = +$('per').value;
+    const cut = $('cut').checked, showNum = $('num').checked;
+    const m = clamp($('mar').value, 0, 30, 0) * 2.8346;
+
+    const nums = [];
+    for(let n = from; n <= to; n++) if(!skip.has(n)) nums.push(n);
+    if(!nums.length) throw new Error('No pages left to print. Check From, To and Skip.');
+    if($('order').value === 'r') nums.reverse();
+
+    const pages = nums.map(n => src.getPage(n - 1));
+    const boxes = pages.map(p => {
+      const mb = p.getMediaBox();
+      const left = side === 'left' ? mb.x : mb.x + mb.width * (1 - frac);
+      const right = side === 'left' ? mb.x + mb.width * frac : mb.x + mb.width;
+      return { left, right, bottom: mb.y + mb.height * tBot, top: mb.y + mb.height * (1 - tTop) };
+    });
+
+    const out = await PDFDocument.create();
+    const emb = await out.embedPages(pages, boxes);
+    const font = showNum ? await out.embedFont(StandardFonts.Helvetica) : null;
+
+    let W, H;
+    const paper = $('paper').value;
+    if(paper === 'a4'){ W = 595.28; H = 841.89; }
+    else if(paper === 'letter'){ W = 612; H = 792; }
+    else { const s0 = pages[0].getSize(); W = s0.width; H = s0.height; }
+
+    const cols = per === 1 ? 1 : 2, rows = per === 4 ? 2 : 1;
+    const cw = (W - 2*m) / cols, ch = (H - 2*m) / rows;
+    const numH = showNum ? 12 : 0;
+
+    for(let i = 0; i < emb.length; i += per){
+      const sheet = out.addPage([W, H]);
+      for(let k = 0; k < per && i + k < emb.length; k++){
+        const e = emb[i + k];
+        const c = k % cols, r = Math.floor(k / cols);
+        const x0 = m + c * cw, y0 = H - m - (r + 1) * ch;
+        const availH = ch - numH;
+        const s = Math.min(cw / e.width, availH / e.height);
+        const w = e.width * s, h = e.height * s;
+        sheet.drawPage(e, { x: x0 + (cw - w) / 2, y: y0 + numH + (availH - h) / 2, width: w, height: h });
+        if(showNum){
+          const t = String(nums[i + k]);
+          const tw = font.widthOfTextAtSize(t, 8);
+          sheet.drawText(t, { x: x0 + (cw - tw) / 2, y: y0 + 3, size: 8, font, color: rgb(0.35,0.35,0.35) });
+        }
+      }
+      if(cut){
+        const col = rgb(0.6,0.6,0.6);
+        for(let c = 1; c < cols; c++) sheet.drawLine({ start:{x:m + c*cw, y:m}, end:{x:m + c*cw, y:H - m}, thickness:0.5, color:col });
+        for(let r = 1; r < rows; r++) sheet.drawLine({ start:{x:m, y:H - m - r*ch}, end:{x:W - m, y:H - m - r*ch}, thickness:0.5, color:col });
+      }
+    }
+    const bytes = await out.save();
+    if(outUrl) URL.revokeObjectURL(outUrl);
+    outBlob = new Blob([bytes], {type:'application/pdf'});
+    outUrl = URL.createObjectURL(outBlob);
+    $('out').style.display = 'block';
+    try{
+      const f = new File([outBlob], srcName + '-print.pdf', {type:'application/pdf'});
+      $('share').style.display = (navigator.canShare && navigator.canShare({files:[f]})) ? 'block' : 'none';
+    }catch(e){ $('share').style.display = 'none'; }
+    msg('Done: ' + emb.length + ' pages on ' + out.getPageCount() + ' sheets.');
+  }catch(e){ msg(e.message || 'Something went wrong.', true); }
+  btn.disabled = false;
+});
+
+$('print').addEventListener('click', () => { if(outUrl) window.open(outUrl, '_blank'); });
+$('dl').addEventListener('click', () => {
+  if(!outUrl) return;
+  const a = document.createElement('a');
+  a.href = outUrl; a.download = srcName + '-print.pdf';
+  document.body.appendChild(a); a.click(); a.remove();
+});
+$('share').addEventListener('click', async () => {
+  try{
+    const f = new File([outBlob], srcName + '-print.pdf', {type:'application/pdf'});
+    await navigator.share({ files:[f], title: srcName });
+  }catch(e){}
+});
+</script>
+</body>
+</html>
